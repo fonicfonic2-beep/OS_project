@@ -11,19 +11,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source code
+      - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Install required packages
+      - name: Install build dependencies
         run: |
-          sudo apt-get update -y
-          # KHÔNG dùng apt upgrade, bỏ qua để tránh lỗi systemd
-          sudo apt-get install -y --no-upgrade nasm gcc make binutils xorriso grub-pc-bin mtools qemu-system-x86_64
+          sudo apt-get install -y nasm gcc make binutils xorriso grub-pc-bin mtools qemu-system-x86_64
 
-      - name: Build project
+      - name: Build ISO
         run: make all
 
-      - name: Upload ISO artifact
+      - name: Upload ISO file
         uses: actions/upload-artifact@v4
         with:
           name: MyOS-x86_64-ISO
