@@ -18,8 +18,11 @@ jobs:
         run: |
           sudo apt-get install -y nasm gcc make binutils xorriso grub-pc-bin mtools qemu-system-x86
 
+      - name: List files for debug
+        run: ls -la
+
       - name: Build ISO
-        run: make all
+        run: make
 
       - name: Upload ISO file
         uses: actions/upload-artifact@v4
