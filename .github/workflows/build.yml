@@ -11,21 +11,32 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - name: Checkout toàn bộ source code
+      - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Cập nhật danh sách gói + Cài phụ thuộc
+      - name: Cài các gói cần thiết
         run: |
           sudo apt-get update --fix-missing
           sudo apt-get install -y nasm gcc make binutils xorriso grub-pc-bin mtools qemu-system-x86
 
-      - name: Xem danh sách file để debug
+      - name: Liệt kê file để kiểm tra
         run: ls -la OSProject/
 
-      - name: Chạy make từ trong thư mục OSProject
+      - name: Chuyển toàn bộ 8 dấu cách đầu dòng thành TAB thật
+        run: |
+          cd OSProject
+          sed -i 's/^        /\t/g' Makefile
+          sed -i 's/^    /\t/g' Makefile
+
+      - name: DEBUG xem ký tự ẩn trong Makefile
+        run: |
+          cd OSProject
+          cat -A Makefile
+
+      - name: Chạy Build
         run: cd OSProject && make all
 
-      - name: Upload file ISO
+      - name: Tải file ISO ra
         uses: actions/upload-artifact@v4
         with:
           name: MyOS-x86_64-ISO
