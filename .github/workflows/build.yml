@@ -17,8 +17,8 @@ jobs:
       - name: Install required packages
         run: |
           sudo apt-get update -y
-          sudo apt-get upgrade -y
-          sudo apt-get install -y nasm gcc make binutils xorriso grub-pc-bin mtools qemu-system-x86_64
+          # KHÔNG dùng apt upgrade, bỏ qua để tránh lỗi systemd
+          sudo apt-get install -y --no-upgrade nasm gcc make binutils xorriso grub-pc-bin mtools qemu-system-x86_64
 
       - name: Build project
         run: make all
