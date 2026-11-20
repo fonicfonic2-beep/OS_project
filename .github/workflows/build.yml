@@ -1,0 +1,30 @@
+name: Build MyOS x86_64 ISO
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Install required packages
+        run: |
+          sudo apt-get update -y
+          sudo apt-get upgrade -y
+          sudo apt-get install -y nasm gcc make binutils xorriso grub-pc-bin mtools qemu-system-x86_64
+
+      - name: Build project
+        run: make all
+
+      - name: Upload ISO artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MyOS-x86_64-ISO
+          path: build/MyOS.iso
