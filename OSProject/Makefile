@@ -1,6 +1,3 @@
-# ==========================================
-# CẤU HÌNH
-# ==========================================
 CC      := gcc
 NASM    := nasm
 LD      := ld
@@ -23,9 +20,6 @@ OBJS    := $(C_OBJ) $(ASM_OBJ)
 KERNEL  := $(BUILD)/kernel.bin
 ISO     := $(BUILD)/MyOS.iso
 
-# ==========================================
-# MỤC TIÊU
-# ==========================================
 .PHONY: all clean run
 
 all: $(ISO)
@@ -45,9 +39,10 @@ $(ISO): $(KERNEL)
  @mkdir -p $(ISODIR)/boot/grub
  cp $(KERNEL) $(ISODIR)/boot/kernel.bin
  cp grub.cfg $(ISODIR)/boot/grub/grub.cfg
- xorriso -as mkisofs -o $@ -isohybrid-mbr /usr/lib/grub/i386-pc/boot_hybrid.img \
- -b boot/grub/i386-pc/eltorito.img -no-emul-boot -boot-load-size 4 -boot-info-table \
- --grub2-boot-info --grub2-mbr /usr/lib/grub/i386-pc/boot_hybrid.img $(ISODIR)
+ xorriso -as mkisofs -o $@ -isohybrid-mbr /usr/lib/grub/i386-pc/boot_hybrid.img -b boot/grub/i386-pc/eltorito.img -no-emul-boot -boot-load-size 4 -boot-info-table --grub2-boot-info --grub2-mbr /usr/lib/grub/i386-pc/boot_hybrid.img $(ISODIR)
 
 run: $(ISO)
  qemu-system-x86_64 -cdrom $(ISO)
+
+clean:
+ rm -rf $(BUILD) $(ISODIR)
