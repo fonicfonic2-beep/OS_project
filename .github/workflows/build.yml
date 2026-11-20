@@ -11,21 +11,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source
+      - name: Checkout toàn bộ source code
         uses: actions/checkout@v4
 
-      - name: Install build dependencies
+      - name: Cài các gói cần build
         run: |
           sudo apt-get install -y nasm gcc make binutils xorriso grub-pc-bin mtools qemu-system-x86
 
-      - name: List files for debug
-        run: ls -la
+      - name: Xem danh sách file để debug
+        run: ls -la OSProject/
 
-      - name: Build ISO
-        run: make
+      - name: Chạy make từ trong thư mục OSProject
+        run: cd OSProject && make all
 
-      - name: Upload ISO file
+      - name: Upload file ISO
         uses: actions/upload-artifact@v4
         with:
           name: MyOS-x86_64-ISO
-          path: build/MyOS.iso
+          path: OSProject/build/MyOS.iso
