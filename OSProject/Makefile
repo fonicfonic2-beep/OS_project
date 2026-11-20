@@ -1,87 +1,66 @@
-# ============================================================================
-#  MyOS x86_64 - Makefile
-#  Build: make          -> build/kernel.bin + iso/myos.bin
-#         make iso      -> build/MyOS.iso (bootable, GRUB2 Multiboot2)
-#         make run      -> boot ISO in qemu-system-x86_64
-#         make clean
-# ============================================================================
+# ==============================
+# CẤU HÌNH BIẾN
+# ==============================
+CC      = gcc
+AS      = as
+NASM    = nasm
+LD      = ld
 
-# Toolchain: prefer x86_64-elf cross compiler; fall back to native gcc.
-CC      ?= x86_64-elf-gcc
-LD      ?= x86_64-elf-ld
-AS      ?= nasm
-GRUBMK  ?= grub-mkrescue
-QEMU    ?= qemu-system-x86_64
+CFLAGS  = -ffreestanding -m64 -mno-red-zone -mcmodel=kernel -mgeneral-regs-only -Wall -Wextra
+NASMFLAGS = -f elf64 -g -F dwarf
+LDFLAGS = -nostdlib -T linker.ld
 
-# If cross compiler not installed, native gcc/ld can build this freestanding
-# kernel too (tested with gcc 11). Uncomment the two lines below:
-# CC = gcc
-# LD = ld
+SRC_DIR = src
+BUILD_DIR = build
+ISO_DIR = iso
 
-CFLAGS  := -ffreestanding -nostdlib -nostartfiles -nodefaultlibs \
-           -mno-red-zone -mcmodel=kernel -mgeneral-regs-only -fno-pic \
-           -Wall -Wextra -I src/include -g -O2
-ASFLAGS := -f elf64 -g -F dwarf
-LDFLAGS := -n -T linker.ld
+# ==============================
+# DANH SÁCH FILE
+# ==============================
+C_SOURCES  := $(shell find $(SRC_DIR) -name '*.c')
+ASM_SOURCES := $(shell find $(SRC_DIR) -name '*.asm')
 
-BUILD   := build
-ISO     := iso
-TARGET  := $(BUILD)/MyOS.iso
-KERNEL  := $(ISO)/boot/myos.bin
-INITRD  := $(ISO)/boot/initrd.img
+C_OBJECTS  := $(patsubst $(SRC_DIR)/%.c, $(BUILD_DIR)/%.o, $(C_SOURCES))
+ASM_OBJECTS := $(patsubst $(SRC_DIR)/%.asm, $(BUILD_DIR)/%.o, $(ASM_SOURCES))
+OBJECTS     := $(C_OBJECTS) $(ASM_OBJECTS)
 
-# Discover all sources
-C_SRC   := $(shell find src -name '*.c')
-ASM_SRC := $(shell find src -name '*.asm')
-OBJ     := $(patsubst src/%.c,$(BUILD)/%.o,$(C_SRC)) \
-           $(patsubst src/%.asm,$(BUILD)/%.o,$(ASM_SRC))
+KERNEL_BIN = $(BUILD_DIR)/kernel.bin
+ISO_FILE   = $(BUILD_DIR)/MyOS.iso
 
-.PHONY: all iso run clean kernel
+# ==============================
+# MỤC TIÊU CHÍNH
+# ==============================
+.PHONY: all clean run
 
-all: iso
+all: $(ISO_FILE)
 
-kernel: $(KERNEL)
+# Liên kết kernel
+$(KERNEL_BIN): $(OBJECTS) linker.ld
+ $(LD) $(LDFLAGS) $(OBJECTS) -o $@
 
-# Link kernel ELF (64-bit, higher-half)
-$(BUILD)/kernel.elf: $(OBJ) linker.ld
-	@mkdir -p $(dir $@)
-	$(LD) $(LDFLAGS) -o $@ $(OBJ)
+# Build file C
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+ @mkdir -p $(dir $@)
+ $(CC) $(CFLAGS) -c $< -o $@
 
-# Strip to flat binary for GRUB (GRUB multiboot2 loads ELF too, but flat is safe)
-$(KERNEL): $(BUILD)/kernel.elf
-	@mkdir -p $(ISO)/boot
-	objcopy -O binary $< $@
-	@# If you prefer loading the ELF directly, copy the .elf instead:
-	@# cp $< $@
+# Build file NASM Assembly
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.asm
+ @mkdir -p $(dir $@)
+ $(NASM) $(NASMFLAGS) $< -o $@
 
-# Compile C
-$(BUILD)/%.o: src/%.c
-	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -c $< -o $@
+# Tạo file ISO GRUB Multiboot2
+$(ISO_FILE): $(KERNEL_BIN)
+ @mkdir -p $(ISO_DIR)/boot/grub
+ cp $(KERNEL_BIN) $(ISO_DIR)/boot/kernel.bin
+ cp grub.cfg $(ISO_DIR)/boot/grub/grub.cfg
+ xorriso -as mkisofs -o $@ -isohybrid-mbr /usr/lib/grub/i386-pc/boot_hybrid.img \
+ -b boot/grub/i386-pc/eltorito.img -no-emul-boot -boot-load-size 4 -boot-info-table \
+ --grub2-boot-info --grub2-mbr /usr/lib/grub/i386-pc/boot_hybrid.img $(ISO_DIR)
 
-# Assemble NASM
-$(BUILD)/%.o: src/%.asm
-	@mkdir -p $(dir $@)
-	$(AS) $(ASFLAGS) $< -o $@
+# Chạy QEMU
+run: $(ISO_FILE)
+ qemu-system-x86_64 -cdrom $(ISO_FILE)
 
-# Create a small FAT32 ramdisk image as initrd (if not present)
-$(INITRD):
-	@mkdir -p $(ISO)/boot
-	@echo "Creating minimal FAT32 initrd image (32 MB)..."
-	dd if=/dev/zero of=$@ bs=1M count=32 status=none
-	@# Format as FAT32 if mkfs.fat exists; otherwise leave blank (kernel
-	@# will still boot, fs commands report "no filesystem").
-	@if command -v mkfs.fat >/dev/null 2>&1; then \
-	    mkfs.fat -F 32 -n MYOS-RD $@ >/dev/null 2>&1 || true; \
-	fi
-
-iso: $(KERNEL) $(INITRD) iso/boot/grub/grub.cfg
-	@mkdir -p $(BUILD)
-	$(GRUBMK) -o $(TARGET) $(ISO)
-	@echo "Built: $(TARGET)"
-
-run: iso
-	$(QEMU) -cdrom $(TARGET) -m 256M -serial stdio -vga std
-
+# Dọn dẹp
 clean:
-	rm -rf $(BUILD) $(KERNEL) $(INITRD)
+ rm -rf $(BUILD_DIR) $(ISO_DIR)
