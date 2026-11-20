@@ -16,7 +16,7 @@ jobs:
 
       - name: Install build dependencies
         run: |
-          sudo apt-get install -y nasm gcc make binutils xorriso grub-pc-bin mtools qemu-system-x86_64
+          sudo apt-get install -y nasm gcc make binutils xorriso grub-pc-bin mtools qemu-system-x86
 
       - name: Build ISO
         run: make all
