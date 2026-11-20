@@ -2,7 +2,6 @@
 # CẤU HÌNH BIẾN
 # ==============================
 CC      = gcc
-AS      = as
 NASM    = nasm
 LD      = ld
 
@@ -34,21 +33,17 @@ ISO_FILE   = $(BUILD_DIR)/MyOS.iso
 
 all: $(ISO_FILE)
 
-# Liên kết kernel
 $(KERNEL_BIN): $(OBJECTS) linker.ld
  $(LD) $(LDFLAGS) $(OBJECTS) -o $@
 
-# Build file C
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
  @mkdir -p $(dir $@)
  $(CC) $(CFLAGS) -c $< -o $@
 
-# Build file NASM Assembly
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.asm
  @mkdir -p $(dir $@)
  $(NASM) $(NASMFLAGS) $< -o $@
 
-# Tạo file ISO GRUB Multiboot2
 $(ISO_FILE): $(KERNEL_BIN)
  @mkdir -p $(ISO_DIR)/boot/grub
  cp $(KERNEL_BIN) $(ISO_DIR)/boot/kernel.bin
@@ -57,10 +52,8 @@ $(ISO_FILE): $(KERNEL_BIN)
  -b boot/grub/i386-pc/eltorito.img -no-emul-boot -boot-load-size 4 -boot-info-table \
  --grub2-boot-info --grub2-mbr /usr/lib/grub/i386-pc/boot_hybrid.img $(ISO_DIR)
 
-# Chạy QEMU
 run: $(ISO_FILE)
  qemu-system-x86_64 -cdrom $(ISO_FILE)
 
-# Dọn dẹp
 clean:
  rm -rf $(BUILD_DIR) $(ISO_DIR)
