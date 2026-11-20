@@ -14,8 +14,9 @@ jobs:
       - name: Checkout toàn bộ source code
         uses: actions/checkout@v4
 
-      - name: Cài các gói cần build
+      - name: Cập nhật danh sách gói + Cài phụ thuộc
         run: |
+          sudo apt-get update --fix-missing
           sudo apt-get install -y nasm gcc make binutils xorriso grub-pc-bin mtools qemu-system-x86
 
       - name: Xem danh sách file để debug
